@@ -100,6 +100,10 @@ private:
 	/// function. For recursive functions, the value is one larger than for all others.
 	std::map<YulString, size_t> callDepths() const;
 
+	/// @returns a map containing the maximum depths of a call chain starting at each
+	/// function. For recursive functions, the value is one larger than for all others.
+	std::map<YulString, size_t> callDepths() const;
+
 	void updateCodeSize(FunctionDefinition const& _fun);
 	void handleBlock(YulString _currentFunctionName, Block& _block);
 	bool recursive(FunctionDefinition const& _fun) const;
