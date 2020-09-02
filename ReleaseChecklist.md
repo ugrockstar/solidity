@@ -32,6 +32,30 @@
 ### Homebrew and MacOS
  - [ ] Update the version and the hash (``sha256sum solidity_x.x.x.tar.gz``) in https://github.com/ethereum/homebrew-ethereum/blob/master/solidity.rb
  - [ ] Take the binary from the ``b_osx`` run of the released commit in circle-ci and add it to the release page as ``solc-macos``.
+ - [ ] Bump homebrew formula
+
+#### Bump homebrew formula using `brew`
+```
+brew bump-formula-pr --message="Update solidity to x.y.z" --url="https://github.com/ethereum/solidity/releases/download/vx.y.z/solidity_x.y.z.tar.gz" --sha256="<SHA256-HASH>" solidity
+```
+
+#### Bump homebrew formula manually
+
+- fork homebrew core repository `https://github.com/Homebrew/homebrew-core`
+- `git clone git@github.com:<GITHUB_USER>/homebrew-core.git`
+- `git remote add upstream git@github.com:Homebrew/homebrew-core.git`
+	- `git fetch upstream`
+	- `git rebase upstream/master`
+- `git checkout master`
+- `git branch bump-solidity-X.Y.Z`
+- `git checkout bump-solidity-X.Y.Z`
+- update file `Formula/solidity.rb`
+	- update `url` value to point to latest release tar.gz, e.g. `https://github.com/ethereum/solidity/releases/download/v0.7.1/solidity_0.7.1.tar.gz`
+	- update `sha256` value of file referenced in `url`, e.g. `c69205d902ac8dd66f5aeaa78a08e5411cdb26a0b9479fcf44f394b7008b484c`
+- `git add Formula/solidity.rb`
+- `git commit -m "Update solidity to X.Y.Z"`
+- `git push`
+- create pull-request
 
 ### Update solc-bin
  - [ ] Copy ``soljson.js`` from the release page to ``solc-bin/bin/soljson-v<version>+commit.<commit>.js``
