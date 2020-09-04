@@ -13,7 +13,7 @@ contract C {
     function f() external returns (uint256, uint256, byte, uint128, uint128) {
         S[] memory m = new S[](3);
         m[1] = S(0, "abcd", [uint128(1), 2, 3], new uint128[](3));
-        m[1].c[0] = 1; 
+        m[1].c[0] = 1;
         m[1].c[1] = 2;
         m[1].c[2] = 3;
         s = m;

@@ -339,7 +339,10 @@ void StorageItem::storeValue(Type const& _sourceType, SourceLocation const& _loc
 		{
 			m_context << Instruction::POP; // remove byte offset
 			auto const& sourceArrayType = dynamic_cast<ArrayType const&>(_sourceType);
-			if (sourceArrayType.baseType()->category() == Type::Category::Struct && sourceArrayType.location() != DataLocation::Storage)
+			if (
+				(sourceArrayType.baseType()->isDynamicallySized() || dynamic_cast<StructType const*>(sourceArrayType.baseType())) &&
+				sourceArrayType.location() != DataLocation::Storage
+			)
 			{
 				bool isDynamicFromCalldata =
 					sourceArrayType.location() == DataLocation::CallData &&

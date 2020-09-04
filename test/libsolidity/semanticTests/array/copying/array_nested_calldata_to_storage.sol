@@ -1,13 +1,16 @@
-contract c {
-    uint128[37] unused;
-    uint256[] a;
+pragma experimental ABIEncoderV2;
 
-    function test(uint64 u1, uint256[] calldata d, uint256 u2) external returns (uint256, uint256) {
+contract c {
+    uint256[][] a;
+
+    function test(uint256[][] calldata d) external returns (uint256, uint256) {
         a = d;
-        return (a[1] + a[2] + a[3], u1 + u2);
+        assert(a[0][0] == d[0][0]);
+        assert(a[0][1] == d[0][1]);
+        return (a.length, a[1][0] + a[1][1]);
     }
 }
 // ====
 // compileViaYul: also
 // ----
-// test(uint64, uint256[], uint256): 2, 96, 3, 6, 7, 8, 9, 10, 11, 12 -> 27, 5
+// test(uint256[][]): 0x20, 2, 0x40, 0x40, 2, 23, 42 -> 2, 65
