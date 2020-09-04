@@ -1738,7 +1738,7 @@ string YulUtilFunctions::updateStorageValueFunction(
 								let <memberValues> := <loadFromMemoryOrCalldata>(<memberCalldataOffset>)
 								<updateMember>(memberSlot, <memberStorageOffset>, <memberValues>)
 							<!isValueType>
-								<updateMember>(memberSlot,  <memberCalldataOffset>, 3)
+								<updateMember>(memberSlot,  <memberCalldataOffset>)
 							</isValueType>
 						<!fromCalldata>
 							let memberMemoryOffset := add(value, <memberOffset>)

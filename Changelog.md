@@ -1,7 +1,7 @@
 ### 0.7.2 (unreleased)
 
 Language Features:
-
+ * Code generator: Implementing copying arrays of structs to storage.
 
 Compiler Features:
  * Export compiler-generated utility sources via standard-json or combined-json.
