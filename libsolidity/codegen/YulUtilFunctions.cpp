@@ -1726,22 +1726,38 @@ string YulUtilFunctions::updateStorageValueFunction(
 
 					Whiskers t(R"(
 						let memberSlot := add(slot, <memberStorageSlotDiff>)
-						let memberCalldataOrMemOffset := add(value, <memberOffset>)
+
 						<?fromCalldata>
+							<?dynamicallyEncodedMember>
+								let <memberCalldataOffset> := <accessCalldataTail>(value, add(value, <memberOffset>))
+							<!dynamicallyEncodedMember>
+								let <memberCalldataOffset> := add(value, <memberOffset>)
+							</dynamicallyEncodedMember>
+
 							<?isValueType>
-								let <memberValues> := <loadFromMemoryOrCalldata>(memberCalldataOrMemOffset)
+								let <memberValues> := <loadFromMemoryOrCalldata>(<memberCalldataOffset>)
 								<updateMember>(memberSlot, <memberStorageOffset>, <memberValues>)
 							<!isValueType>
-								<updateMember>(memberSlot,  memberCalldataOrMemOffset<?dynArray>, 3</dynArray>)
+								<updateMember>(memberSlot,  <memberCalldataOffset>, 3)
 							</isValueType>
 						<!fromCalldata>
-							let <memberValues> := <loadFromMemoryOrCalldata>(memberCalldataOrMemOffset)
+							let memberMemoryOffset := add(value, <memberOffset>)
+							let <memberValues> := <loadFromMemoryOrCalldata>(memberMemoryOffset)
 							<updateMember>(memberSlot, <?hasOffset><memberStorageOffset>,</hasOffset> <memberValues>)
 						</fromCalldata>
 					)");
 					t("fromCalldata", fromCalldata);
 					if (fromCalldata)
-						t("dynArray", structMembers[i].type->isDynamicallySized() && structMembers[i].type->sizeOnStack() > 1);
+					{
+						t("memberCalldataOffset", suffixedVariableNameList(
+							"memberCalldataOffset_",
+							0,
+							structMembers[i].type->stackItems().size()
+						));
+						t("dynamicallyEncodedMember", structMembers[i].type->isDynamicallyEncoded());
+						if (structMembers[i].type->isDynamicallySized())
+							t("accessCalldataTail", accessCalldataTailFunction(*structMembers[i].type));
+					}
 					t("isValueType", structMembers[i].type->isValueType());
 					t("memberValues", suffixedVariableNameList(
 						"memberValue_",
