@@ -1065,6 +1065,183 @@ string YulUtilFunctions::clearStorageArrayFunction(ArrayType const& _type)
 	});
 }
 
+string YulUtilFunctions::copyArrayFromMemoryToStorage(ArrayType const& _fromType, ArrayType const& _toType)
+{
+	solAssert(_fromType.location() == DataLocation::Memory, "");
+
+	string functionName = "copy_array_memory_to_storage_from_" + _fromType.identifier() + "_to_" + _toType.identifier();
+	return m_functionCollector.createFunction(functionName, [&](){
+		Whiskers templ(R"(
+			function <functionName>(slot, value) {
+				let length := <arrayLength>(value)
+				<?isToDynamic>
+					<storeLength>(slot, length)
+				</isToDynamic>
+
+				let memoryOffset := <dataLocation>(value)
+
+				let elementSlot := <toDataLocation>(slot)
+				<?isBytes>
+					if lt(length, 32) {
+						elementSlot := slot
+					}
+				</isBytes>
+				let elementOffset := 0
+
+				for { let i := 0 } lt(i, length) {i := add(i, 1)} {
+					let <elementValues> := <readFromMemory>(memoryOffset)
+					<?isBytes>
+						<updateStorageValue>(elementSlot, sub(31, elementOffset), <elementValues>)
+					<!isBytes>
+						<updateStorageValue>(elementSlot<?hasOffset>, elementOffset</hasOffset>, <elementValues>)
+					</isBytes>
+					memoryOffset := add(memoryOffset, <stride>)
+
+					<updateSlotAndOffset>
+				}
+			}
+		)");
+		templ("functionName", functionName);
+		templ("value", suffixedVariableNameList("value_", 0, _fromType.sizeOnStack()));
+		templ("isToDynamic", _toType.isDynamicallySized());
+		templ("isBytes", _toType.isByteArray());
+		if (_toType.isDynamicallySized())
+			templ("storeLength", storeArrayLengthFunction(_toType));
+		templ("dataLocation", arrayDataAreaFunction(_fromType));
+		templ("toDataLocation", arrayDataAreaFunction(_toType));
+		templ("arrayLength",arrayLengthFunction(_fromType));
+		templ("stride", to_string(_fromType.memoryStride()));
+		templ("readFromMemory", readFromMemory(*_fromType.baseType()));
+		templ("hasOffset", _toType.baseType()->isValueType());
+		templ("elementValues", suffixedVariableNameList(
+				"elementValue_",
+				0,
+				_fromType.baseType()->stackItems().size()
+		));
+		templ("updateStorageValue", updateStorageValueFunction(*_fromType.baseType(), *_toType.baseType()));
+		templ(
+			"updateSlotAndOffset",
+			Whiskers(R"(
+				<?multipleItemsPerSlot>
+					elementOffset := add(elementOffset, <storageStride>)
+					if gt(elementOffset, sub(32, <storageStride>)) {
+						elementOffset := 0
+						elementSlot := add(elementSlot, 1)
+					}
+				<!multipleItemsPerSlot>
+					elementSlot := add(elementSlot, <storageSize>)
+					elementOffset := 0
+				</multipleItemsPerSlot>
+			)")
+			("multipleItemsPerSlot", _toType.storageStride() <= 16)
+			("storageStride", to_string(_toType.storageStride()))
+			("storageSize", _toType.baseType()->storageSize().str())
+			.render()
+		);
+		return templ.render();
+	});
+}
+
+string YulUtilFunctions::copyArrayFromCalldataToStorage(ArrayType const& _fromType, ArrayType const& _toType)
+{
+	string functionName = "copy_array_calldata_to_storage_from_" + _fromType.identifier() + "_to_" + _toType.identifier();
+	return m_functionCollector.createFunction(functionName, [&](){
+		Whiskers templ(R"(
+			function <functionName>(slot, value, <?isFromDynamic>len</isFromDynamic>) {
+				let length := <arrayLength>(value<?isFromDynamic>, len</isFromDynamic>)
+				<?isToDynamic>
+					<storeLength>(slot, length)
+				</isToDynamic>
+
+				let elementSlot := <toDataLocation>(slot)
+				let elementOffset := 0
+				<?isBytes>
+					if lt(length, 32) {
+						elementSlot := slot
+					}
+				</isBytes>
+
+				for { let i := 0 } lt(i, length) {i := add(i, 1)} {
+
+					<?dynamicallyEncodedBase>
+						let <calldataOffset> := <accessCalldataTail>(value, add(value, mul(i, <stride>)))
+					<!dynamicallyEncodedBase>
+						let <calldataOffset> := add(value, mul(i, <stride>))
+					</dynamicallyEncodedBase>
+
+					<?isBytes>
+						let <elementValues> := <cleanup>(calldataload(<calldataOffset>))
+						<updateStorageValue>(elementSlot, sub(31, elementOffset), <elementValues>)
+					</isBytes>
+					<?isValueType>
+						let <elementValues> := <readFromCalldataOrMemory>(<calldataOffset>)
+						<updateStorageValue>(elementSlot, elementOffset, <elementValues>)
+					</isValueType>
+					<?isRefType>
+						<updateStorageValue>(elementSlot, <calldataOffset>)
+					</isRefType>
+
+					<updateSlotAndOffset>
+				}
+			}
+		)");
+		templ("functionName", functionName);
+		templ("isFromDynamic", _fromType.isDynamicallySized());
+		templ("isToDynamic", _toType.isDynamicallySized());
+		templ("dynamicallySizedBase", _fromType.baseType()->isDynamicallySized());
+		templ("dynamicallyEncodedBase", _fromType.baseType()->isDynamicallyEncoded());
+		if (_fromType.baseType()->isDynamicallyEncoded())
+			templ("accessCalldataTail", accessCalldataTailFunction(*_fromType.baseType()));
+		templ("dataLocation", arrayDataAreaFunction(_fromType));
+		if (_toType.isDynamicallySized())
+			templ("storeLength", storeArrayLengthFunction(_toType));
+		templ("arrayLength",arrayLengthFunction(_fromType));
+		templ("calldataOffset", suffixedVariableNameList(
+			"calldataOffset_",
+			0,
+			_fromType.baseType()->stackItems().size()
+		));
+		templ("isBytes", _toType.isByteArray());
+		templ("isValueType", !_toType.isByteArray() && _fromType.baseType()->isValueType());
+		templ("toDataLocation", arrayDataAreaFunction(_toType));
+		templ("isRefType", !_fromType.baseType()->isValueType());
+		if (_fromType.isByteArray())
+			templ("cleanup", cleanupFunction(*_fromType.baseType()));
+		if (_fromType.baseType()->isValueType())
+			templ("readFromCalldataOrMemory", readFromCalldata(*_fromType.baseType()));
+		templ("hasOffset", _toType.baseType()->isValueType());
+		templ("elementValues", suffixedVariableNameList(
+				"elementValue_",
+				0,
+				_fromType.baseType()->stackItems().size()
+		));
+		templ("updateStorageValue", updateStorageValueFunction(*_fromType.baseType(), *_toType.baseType()));
+		templ("stride", to_string(_toType.calldataStride()));
+
+		templ(
+			"updateSlotAndOffset",
+			Whiskers(R"(
+				<?multipleItemsPerSlot>
+					elementOffset := add(elementOffset, <storageStride>)
+					if gt(elementOffset, sub(32, <storageStride>)) {
+						elementOffset := 0
+						elementSlot := add(elementSlot, 1)
+					}
+				<!multipleItemsPerSlot>
+					elementSlot := add(elementSlot, <storageSize>)
+					elementOffset := 0
+				</multipleItemsPerSlot>
+			)")
+			("multipleItemsPerSlot", _toType.storageStride() <= 16)
+			("storageStride", to_string(_toType.storageStride()))
+			("storageSize", _toType.baseType()->storageSize().str())
+			.render()
+		);
+
+		return templ.render();
+	});
+}
+
 string YulUtilFunctions::copyArrayToStorage(ArrayType const& _fromType, ArrayType const& _toType)
 {
 	solAssert(
@@ -1072,73 +1249,12 @@ string YulUtilFunctions::copyArrayToStorage(ArrayType const& _fromType, ArrayTyp
 		""
 	);
 
-	string functionName = "copy_array_to_storage_from_" + _fromType.identifier() + "_to_" + _toType.identifier();
-	return m_functionCollector.createFunction(functionName, [&](){
-		Whiskers templ(R"(
-			function <functionName>(slot, <value>) {
-				let length := <arrayLength>(<value>)
-				<?isToDynamic>
-					<storeLength>(slot, length)
-				</isToDynamic>
-
-				for { let i := 0 } lt(i, length) {i := add(i, 1)} {
-					let <callDataOrMemoryOffset> := <fromArrayIndexAccess>(<value>, i)
-					let elementSlot, elementOffset := <toArrayIndexAccess>(slot, i)
-
-					<?fromCalldata>
-						<?isBytes>
-							let <elementValues> := <cleanup>(calldataload(<callDataOrMemoryOffset>))
-							<updateStorageValue>(elementSlot, elementOffset, <elementValues>)
-						</isBytes>
-						<?isValueType>
-							let <elementValues> := <readFromCalldataOrMemory>(<callDataOrMemoryOffset>)
-							<updateStorageValue>(elementSlot, elementOffset, <elementValues>)
-						</isValueType>
-						<?isRefType>
-							<updateStorageValue>(elementSlot, <callDataOrMemoryOffset>)
-						</isRefType>
-					<!fromCalldata>
-						let <elementValues> := <readFromCalldataOrMemory>(<callDataOrMemoryOffset>)
-						<updateStorageValue>(elementSlot<?hasOffset>, elementOffset</hasOffset>, <elementValues>)
-					</fromCalldata>
-				}
-			}
-		)");
-		templ("functionName", functionName);
-		templ("value", suffixedVariableNameList("value_", 0, _fromType.sizeOnStack()));
-		templ("isToDynamic", _toType.isDynamicallySized());
-		if (_toType.isDynamicallySized())
-			templ("storeLength", storeArrayLengthFunction(_toType));
-		templ("arrayLength",arrayLengthFunction(_fromType));
-		bool fromCalldata = _fromType.location() == DataLocation::CallData;
-		templ("fromArrayIndexAccess",
-			fromCalldata ?
-			calldataArrayIndexAccessFunction(_fromType) :
-			memoryArrayIndexAccessFunction(_fromType)
-		);
-		templ("callDataOrMemoryOffset", suffixedVariableNameList(
-			"callDataOrMemoryOffset_",
-			0,
-			_fromType.baseType()->isDynamicallySized() && _fromType.location() == DataLocation::CallData ? 2 : 1
-		));
-		templ("toArrayIndexAccess", storageArrayIndexAccessFunction(_toType));
-		templ("fromCalldata", fromCalldata);
-		templ("isBytes", _toType.isByteArray());
-		templ("isValueType", !_toType.isByteArray() && _fromType.baseType()->isValueType());
-		templ("isRefType", !_fromType.baseType()->isValueType());
-		if (_fromType.isByteArray() && fromCalldata)
-			templ("cleanup", cleanupFunction(*_fromType.baseType()));
-		if (_fromType.baseType()->isValueType() || !fromCalldata)
-			templ("readFromCalldataOrMemory", readFromMemoryOrCalldata(*_fromType.baseType(), fromCalldata));
-		templ("hasOffset", _toType.baseType()->isValueType());
-		templ("elementValues", suffixedVariableNameList(
-			"elementValue_",
-			0,
-			_fromType.baseType()->stackItems().size()
-		));
-		templ("updateStorageValue", updateStorageValueFunction(*_fromType.baseType(), *_toType.baseType()));
-		return templ.render();
-	});
+	if (_fromType.location() == DataLocation::Memory)
+		return copyArrayFromMemoryToStorage(_fromType, _toType);
+	else if (_fromType.location() == DataLocation::CallData)
+		return copyArrayFromCalldataToStorage(_fromType, _toType);
+	else
+		solAssert(false, "");
 }
 
 string YulUtilFunctions::storeArrayLengthFunction(ArrayType const& _type)

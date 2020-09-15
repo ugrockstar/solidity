@@ -410,6 +410,9 @@ private:
 	/// signature: (storageArray, length)
 	std::string storeArrayLengthFunction(ArrayType const& _type);
 
+	std::string copyArrayFromCalldataToStorage(ArrayType const& _fromType, ArrayType const& _toType);
+	std::string copyArrayFromMemoryToStorage(ArrayType const& _fromType, ArrayType const& _toType);
+
 	std::string readFromMemoryOrCalldata(Type const& _type, bool _fromCalldata);
 
 	/// @returns a function that reads a value type from storage.
