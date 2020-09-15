@@ -630,6 +630,68 @@ string YulUtilFunctions::overflowCheckedIntExpFunction(
 	});
 }
 
+string YulUtilFunctions::overflowCheckedIntLiteralExpFunction(
+	u256 const _base,
+	IntegerType const& _exponentType
+)
+{
+	solAssert(!_exponentType.isSigned(), "");
+
+	// Calculates the upperbound for exponentiation, that is, calculate `b`, such that
+	// _base**b <= _maxValue and _base**(b + 1) > _maxValue
+	auto findExponentUpperbound = [](bigint _base, bigint _maxValue) -> unsigned {
+		unsigned first = 0;
+		unsigned last = 255;
+		unsigned middle;
+
+		while (first < last)
+		{
+			middle = (first + last)/2;
+
+			if (boost::multiprecision::pow(_base, middle) <= _maxValue)
+			{
+				if (boost::multiprecision::pow(_base, middle + 1) > _maxValue)
+					return middle;
+				else
+					first = middle + 1;
+			}
+			else
+				last = middle;
+		}
+
+		return last;
+	};
+
+	bigint maxValue = _exponentType.maxValue();
+	unsigned exponentUpperbound = findExponentUpperbound(_base, maxValue);
+
+	solAssert(
+		boost::multiprecision::pow(bigint(_base), exponentUpperbound) <= maxValue,
+		"Incorrect exponent upper bound calculated."
+	);
+	solAssert(
+		boost::multiprecision::pow(bigint(_base), exponentUpperbound + 1) > maxValue,
+		"Incorrect exponent upper bound calculated."
+	);
+
+	string functionName = "checked_exp_" + _base.str() + "_" + _exponentType.identifier();
+	return m_functionCollector.createFunction(functionName, [&]() {
+		return
+			Whiskers(R"(
+			function <functionName>(exponent) -> power {
+				exponent := <exponentCleanupFunction>(exponent)
+				if gt(exponent, <exponentUpperbound>) { revert(0, 0) }
+				power := exp(<base>, exponent)
+			}
+			)")
+			("functionName", functionName)
+			("base", _base.str())
+			("exponentUpperbound", to_string(exponentUpperbound))
+			("exponentCleanupFunction", cleanupFunction(_exponentType))
+			.render();
+	});
+}
+
 string YulUtilFunctions::overflowCheckedUnsignedExpFunction()
 {
 	// Checks for the "small number specialization" below.

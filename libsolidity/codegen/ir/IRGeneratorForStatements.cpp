@@ -606,17 +606,33 @@ bool IRGeneratorForStatements::visit(BinaryOperation const& _binOp)
 			solAssert(false, "Unknown comparison operator.");
 		define(_binOp) << expr << "\n";
 	}
-	else if (TokenTraits::isShiftOp(op) || op == Token::Exp)
+	else if (op == Token::Exp)
 	{
 		IRVariable left = convert(_binOp.leftExpression(), *commonType);
 		IRVariable right = convert(_binOp.rightExpression(), *type(_binOp.rightExpression()).mobileType());
-		if (op == Token::Exp)
+
+		if (auto literal = dynamic_cast<Literal const*>(&_binOp.leftExpression()))
+		{
+			RationalNumberType const* r = TypeProvider::rationalNumber(*literal);
+			solAssert(r, "Invalid literal as the base for exponentiation.");
+
+			define(_binOp) << m_utils.overflowCheckedIntLiteralExpFunction(
+				r->literalValue(nullptr),
+				dynamic_cast<IntegerType const&>(right.type())
+			) << "(" << right.name() << ")\n";
+		}
+		else
 			define(_binOp) << m_utils.overflowCheckedIntExpFunction(
 				dynamic_cast<IntegerType const&>(left.type()),
 				dynamic_cast<IntegerType const&>(right.type())
 			) << "(" << left.name() << ", " << right.name() << ")\n";
-		else
-			define(_binOp) << shiftOperation(_binOp.getOperator(), left, right) << "\n";
+
+	}
+	else if (TokenTraits::isShiftOp(op))
+	{
+		IRVariable left = convert(_binOp.leftExpression(), *commonType);
+		IRVariable right = convert(_binOp.rightExpression(), *type(_binOp.rightExpression()).mobileType());
+		define(_binOp) << shiftOperation(_binOp.getOperator(), left, right) << "\n";
 	}
 	else
 	{

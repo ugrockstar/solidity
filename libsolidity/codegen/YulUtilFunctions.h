@@ -129,6 +129,10 @@ public:
 	/// signature: (base, exponent) -> power
 	std::string overflowCheckedIntExpFunction(IntegerType const& _type, IntegerType const& _exponentType);
 
+	/// @returns the name of the exponentiation function, specialized for literal base.
+	/// signature: exponent -> power
+	std::string overflowCheckedIntLiteralExpFunction(u256 const value, IntegerType const& _exponentType);
+
 	/// Generic unsigned checked exponentiation function.
 	/// Reverts if the result is larger than max.
 	/// signature: (base, exponent, max) -> power
