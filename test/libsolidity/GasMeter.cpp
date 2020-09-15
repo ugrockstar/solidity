@@ -270,7 +270,7 @@ BOOST_AUTO_TEST_CASE(exponent_size)
 				return x ** 0x100;
 			}
 			function h(uint x) public returns (uint) {
-				return x ** 0x10000;
+				unchecked { return x ** 0x10000; }
 			}
 		}
 	)";
