@@ -369,6 +369,9 @@ public:
 
 	std::string revertReasonIfDebug(std::string const& _message = "");
 
+	/// Reverts with ArithmeticError error type.
+	std::string arithmeticErrorFunction();
+
 	/// Returns the name of a function that decodes an error message.
 	/// signature: () -> arrayPtr
 	///
