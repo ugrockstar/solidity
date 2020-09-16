@@ -158,7 +158,9 @@ void IRGeneratorForStatements::generate(Block const& _block)
 {
 	try
 	{
+		m_context.pushCheckedArithmetic(!_block.unchecked());
 		_block.accept(*this);
+		m_context.popCheckedArithmetic();
 	}
 	catch (langutil::UnimplementedFeatureError const& _error)
 	{

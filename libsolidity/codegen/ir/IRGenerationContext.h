@@ -132,6 +132,10 @@ public:
 
 	langutil::EVMVersion evmVersion() const { return m_evmVersion; };
 
+	void pushCheckedArithmetic(bool _value) { m_checkedArithmetic.push(_value); }
+	void popCheckedArithmetic() { m_checkedArithmetic.pop(); }
+	bool checkedArithmetic() const { return m_checkedArithmetic.empty() ? true : m_checkedArithmetic.top(); }
+
 	ABIFunctions abiFunctions();
 
 	/// @returns code that stores @param _message for revert reason
@@ -158,6 +162,8 @@ private:
 	std::map<VariableDeclaration const*, std::pair<u256, unsigned>> m_stateVariables;
 	MultiUseYulFunctionCollector m_functions;
 	size_t m_varCounter = 0;
+	/// Whether to use checked or wrapping arithmetic.
+	std::stack<bool> m_checkedArithmetic;
 
 	/// Function definitions queued for code generation. They're the Solidity functions whose calls
 	/// were discovered by the IR generator during AST traversal.
