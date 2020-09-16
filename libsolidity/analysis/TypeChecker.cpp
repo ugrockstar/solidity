@@ -2523,8 +2523,10 @@ bool TypeChecker::visit(MemberAccess const& _memberAccess)
 	TypePointer exprType = type(_memberAccess.expression());
 	ASTString const& memberName = _memberAccess.memberName();
 
+	auto& annotation = _memberAccess.annotation();
+
 	// Retrieve the types of the arguments if this is used to call a function.
-	auto const& arguments = _memberAccess.annotation().arguments;
+	auto const& arguments = annotation.arguments;
 	MemberList::MemberMap possibleMembers = exprType->members(currentDefinitionScope()).membersByName(memberName);
 	size_t const initialMemberCount = possibleMembers.size();
 	if (initialMemberCount > 1 && arguments)
@@ -2539,8 +2541,6 @@ bool TypeChecker::visit(MemberAccess const& _memberAccess)
 			else
 				++it;
 	}
-
-	auto& annotation = _memberAccess.annotation();
 
 	if (possibleMembers.empty())
 	{
@@ -2656,6 +2656,11 @@ bool TypeChecker::visit(MemberAccess const& _memberAccess)
 				_memberAccess.location(),
 				"Using \"." + memberName + "(...)\" is deprecated. Use \"{" + memberName + ": ...}\" instead."
 			);
+
+		if (!funType->bound())
+			if (auto contractType = dynamic_cast<ContractType const*>(exprType))
+				annotation.requiredLookup = contractType->isSuper() ? VirtualLookup::Super : VirtualLookup::Virtual;
+
 	}
 
 	if (auto const* structType = dynamic_cast<StructType const*>(exprType))
@@ -3037,6 +3042,10 @@ bool TypeChecker::visit(Identifier const& _identifier)
 		annotation.isPure = true;
 	else if (dynamic_cast<ModuleType const*>(annotation.type))
 		annotation.isPure = true;
+
+	annotation.requiredLookup =
+		dynamic_cast<CallableDeclaration const*>(annotation.referencedDeclaration) ?
+		VirtualLookup::Virtual : VirtualLookup::None;
 
 	// Check for deprecated function names.
 	// The check is done here for the case without an actual function call.

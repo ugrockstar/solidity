@@ -263,6 +263,8 @@ struct IdentifierAnnotation: ExpressionAnnotation
 {
 	/// Referenced declaration, set at latest during overload resolution stage.
 	Declaration const* referencedDeclaration = nullptr;
+	/// What kind of lookup needs to be done (virtual, super) find the declaration.
+	VirtualLookup requiredLookup = VirtualLookup::None;
 	/// List of possible declarations it could refer to (can contain duplicates).
 	std::vector<Declaration const*> candidateDeclarations;
 	/// List of possible declarations it could refer to.
@@ -273,6 +275,8 @@ struct MemberAccessAnnotation: ExpressionAnnotation
 {
 	/// Referenced declaration, set at latest during overload resolution stage.
 	Declaration const* referencedDeclaration = nullptr;
+	/// What kind of lookup needs to be done (virtual, super) find the declaration.
+	VirtualLookup requiredLookup = VirtualLookup::None;
 };
 
 struct BinaryOperationAnnotation: ExpressionAnnotation
