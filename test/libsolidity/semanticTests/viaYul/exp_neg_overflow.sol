@@ -21,15 +21,15 @@ contract C {
 // f(int8,uint256): -7, 2 -> 0x31
 // f(int8,uint256): -7, 3 -> FAILURE
 // f(int8,uint256): -7, 4 -> FAILURE
-// f(int8,uint256): 127, 31 -> FAILURE
-// f(int8,uint256): 127, 131 -> FAILURE
+// f(int8,uint256): 127, 31 -> FAILURE, hex"1f825c6a"
+// f(int8,uint256): 127, 131 -> FAILURE, hex"1f825c6a"
 // f(int8,uint256): -128, 0 -> 1
 // f(int8,uint256): -128, 1 -> -128
-// f(int8,uint256): -128, 31 -> FAILURE
-// f(int8,uint256): -128, 131 -> FAILURE
+// f(int8,uint256): -128, 31 -> FAILURE, hex"1f825c6a"
+// f(int8,uint256): -128, 131 -> FAILURE, hex"1f825c6a"
 // f(int8,uint256): -11, 2 -> 121
-// f(int8,uint256): -12, 2 -> FAILURE
-// f(int8,uint256): 12, 2 -> FAILURE
+// f(int8,uint256): -12, 2 -> FAILURE, hex"1f825c6a"
+// f(int8,uint256): 12, 2 -> FAILURE, hex"1f825c6a"
 // f(int8,uint256): -5, 3 -> -125
 // f(int8,uint256): -6, 3 -> FAILURE
 // g(int256,uint256): -7, 90 -> 11450477594321044359340126713545146077054004823284978858214566372120240027249

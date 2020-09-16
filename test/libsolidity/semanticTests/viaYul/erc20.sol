@@ -99,6 +99,6 @@ contract ERC20 {
 // totalSupply() -> 20
 // transfer(address,uint256): 2, 5 -> true
 // decreaseAllowance(address,uint256): 2, 0 -> true
-// decreaseAllowance(address,uint256): 2, 1 -> FAILURE
+// decreaseAllowance(address,uint256): 2, 1 -> FAILURE, hex"1f825c6a"
 // transfer(address,uint256): 2, 14 -> true
-// transfer(address,uint256): 2, 2 -> FAILURE
+// transfer(address,uint256): 2, 2 -> FAILURE, hex"1f825c6a"
