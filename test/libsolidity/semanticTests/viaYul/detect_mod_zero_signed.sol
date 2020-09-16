@@ -7,7 +7,7 @@ contract C {
     }
 }
 // ====
-// compileViaYul: true
+// compileViaYul: also
 // ----
 // f(int256,int256): 10, 3 -> 1
 // f(int256,int256): 10, 2 -> 0
@@ -16,9 +16,9 @@ contract C {
 // f(int256,int256): 10, -3 -> 1
 // f(int256,int256): -10, -3 -> -1
 // f(int256,int256): 2, 2 -> 0
-// f(int256,int256): 1, 0 -> FAILURE
-// f(int256,int256): -1, 0 -> FAILURE
-// f(int256,int256): 0, 0 -> FAILURE
+// f(int256,int256): 1, 0 -> FAILURE, hex"1f825c6a"
+// f(int256,int256): -1, 0 -> FAILURE, hex"1f825c6a"
+// f(int256,int256): 0, 0 -> FAILURE, hex"1f825c6a"
 // f(int256,int256): 0, 1 -> 0
 // f(int256,int256): 0, -1 -> 0
 // g(int8,int8): 10, 3 -> 1
@@ -28,8 +28,8 @@ contract C {
 // g(int8,int8): 10, -3 -> 1
 // g(int8,int8): -10, -3 -> -1
 // g(int8,int8): 2, 2 -> 0
-// g(int8,int8): 1, 0 -> FAILURE
-// g(int8,int8): -1, 0 -> FAILURE
-// g(int8,int8): 0, 0 -> FAILURE
+// g(int8,int8): 1, 0 -> FAILURE, hex"1f825c6a"
+// g(int8,int8): -1, 0 -> FAILURE, hex"1f825c6a"
+// g(int8,int8): 0, 0 -> FAILURE, hex"1f825c6a"
 // g(int8,int8): 0, 1 -> 0
 // g(int8,int8): 0, -1 -> 0

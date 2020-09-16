@@ -20,30 +20,35 @@ object "Arraysum_33" {
         code {
             {
                 mstore(64, 128)
-                if iszero(lt(calldatasize(), 4))
+                let _1 := 4
+                if iszero(lt(calldatasize(), _1))
                 {
-                    let _1 := 0
-                    if eq(0x81d73423, shr(224, calldataload(_1)))
+                    let _2 := 0
+                    if eq(0x81d73423, shr(224, calldataload(_2)))
                     {
-                        if callvalue() { revert(_1, _1) }
-                        if slt(add(calldatasize(), not(3)), _1) { revert(_1, _1) }
-                        let vloc_sum := _1
-                        let vloc_i := _1
-                        let _2 := sload(_1)
+                        if callvalue() { revert(_2, _2) }
+                        if slt(add(calldatasize(), not(3)), _2) { revert(_2, _2) }
+                        let vloc_sum := _2
+                        let vloc_i := _2
+                        let _3 := sload(_2)
                         for { }
-                        lt(vloc_i, _2)
+                        lt(vloc_i, _3)
                         {
-                            if gt(vloc_i, not(1)) { revert(_1, _1) }
+                            if gt(vloc_i, not(1)) { revert(_2, _2) }
                             vloc_i := add(vloc_i, 1)
                         }
                         {
-                            mstore(_1, _1)
-                            let _3 := sload(add(keccak256(_1, 0x20), vloc_i))
-                            if gt(vloc_sum, not(_3)) { revert(_1, _1) }
-                            vloc_sum := add(vloc_sum, _3)
+                            mstore(_2, _2)
+                            let _4 := sload(add(keccak256(_2, 0x20), vloc_i))
+                            if gt(vloc_sum, not(_4))
+                            {
+                                mstore(_2, shl(225, 0x0fc12e35))
+                                revert(_2, _1)
+                            }
+                            vloc_sum := add(vloc_sum, _4)
                         }
-                        let memPos := allocateMemory(_1)
-                        return(memPos, sub(abi_encode_uint(memPos, _1), memPos))
+                        let memPos := allocateMemory(_2)
+                        return(memPos, sub(abi_encode_uint(memPos, _2), memPos))
                     }
                 }
                 revert(0, 0)

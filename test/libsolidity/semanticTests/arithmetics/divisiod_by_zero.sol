@@ -11,6 +11,6 @@ contract C {
 // compileViaYul: also
 // ----
 // div(uint256,uint256): 7, 2 -> 3
-// div(uint256,uint256): 7, 0 -> FAILURE # throws #
+// div(uint256,uint256): 7, 0 -> FAILURE, hex"1f825c6a" # throws #
 // mod(uint256,uint256): 7, 2 -> 1
-// mod(uint256,uint256): 7, 0 -> FAILURE # throws #
+// mod(uint256,uint256): 7, 0 -> FAILURE, hex"1f825c6a" # throws #

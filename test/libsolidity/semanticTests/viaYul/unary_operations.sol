@@ -101,8 +101,8 @@ contract C {
 // postdecr_s8(int8): -5 -> -5, -6
 // preincr_u8(uint8): 255 -> FAILURE
 // postincr_u8(uint8): 255 -> FAILURE
-// preincr_u8(uint8): 254 -> FAILURE
-// postincr_u8(uint8): 254 -> FAILURE
+// preincr_u8(uint8): 254 -> FAILURE, hex"1f825c6a"
+// postincr_u8(uint8): 254 -> FAILURE, hex"1f825c6a"
 // predecr_u8(uint8): 0 -> FAILURE
 // postdecr_u8(uint8): 0 -> FAILURE
 // predecr_u8(uint8): 1 -> 0

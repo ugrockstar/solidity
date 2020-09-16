@@ -4,7 +4,7 @@ contract C {
     uint16 b;
 
     function f() public returns (uint256, uint256, uint256, uint256) {
-        a++;
+        unchecked { a++; }
         uint256 c = b;
         delete b;
         unchecked { a -= 2; }
