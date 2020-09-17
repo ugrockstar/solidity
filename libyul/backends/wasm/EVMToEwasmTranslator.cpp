@@ -807,8 +807,274 @@ function u256_to_address(x1, x2, x3, x4) -> r1, r2, r3 {
 }
 
 function keccak256(x1, x2, x3, x4, y1, y2, y3, y4) -> z1, z2, z3, z4 {
-	// TODO implement
-	unreachable()
+	let input:i32 := u256_to_i32ptr(x1, x2, x3, x4) // 0xa0
+	let len:i64 := u256_to_i64(y1, y2, y3, y4)      // 0x00
+
+	// 0) Setup Constants & Data
+	// -------------------------
+	//    const uint64_t keccakf_rndc[24] = {
+	//        0x0000000000000001, 0x0000000000008082, 0x800000000000808a,
+	//        0x8000000080008000, 0x000000000000808b, 0x0000000080000001,
+	//        0x8000000080008081, 0x8000000000008009, 0x000000000000008a,
+	//        0x0000000000000088, 0x0000000080008009, 0x000000008000000a,
+	//        0x000000008000808b, 0x800000000000008b, 0x8000000000008089,
+	//        0x8000000000008003, 0x8000000000008002, 0x8000000000000080,
+	//        0x000000000000800a, 0x800000008000000a, 0x8000000080008081,
+	//        0x8000000000008080, 0x0000000080000001, 0x8000000080008008
+	//    };
+	//
+	//////////////////////
+
+	mstore_internal(0x40:i32, 0xF000, 0x0000, 0x0000, 0x0000) // free-memory pointer
+
+	/////////////////////
+	//
+	let m1, m2, m3, m4 := mload_internal(0x40:i32)
+	let slot:i32 := u256_to_i32ptr(m4, m3, m2, m1) // from this position on we will need 512 bytes
+	mstore_internal(i32.add(slot, 0x00:i32), 0x0000000000000001, 0x0000000000008082, 0x800000000000808a, 0x8000000080008000)
+	mstore_internal(i32.add(slot, 0x20:i32), 0x000000000000808b, 0x0000000080000001, 0x8000000080008081, 0x8000000000008009)
+	mstore_internal(i32.add(slot, 0x40:i32), 0x000000000000008a, 0x0000000000000088, 0x0000000080008009, 0x000000008000000a)
+	mstore_internal(i32.add(slot, 0x60:i32), 0x000000008000808b, 0x800000000000008b, 0x8000000000008089, 0x8000000000008003)
+	mstore_internal(i32.add(slot, 0x80:i32), 0x8000000000008002, 0x8000000000000080, 0x000000000000800a, 0x800000008000000a)
+	mstore_internal(i32.add(slot, 0xA0:i32), 0x8000000080008081, 0x8000000000008080, 0x0000000080000001, 0x8000000080008008)
+
+	//    const int keccakf_rotc[24] = {
+	//        1,  3,  6,  10, 15, 21, 28, 36, 45, 55, 2,  14,
+	//        27, 41, 56, 8,  25, 43, 62, 18, 39, 61, 20, 44
+	//    };
+	mstore_internal(i32.add(slot, 0xC0:i32), 0x0103060A0F151C24,  0x2D37020E1B293808, 0x192B3E12273D142C, 0x0000000000000000)
+
+	//    const int keccakf_piln[24] = {
+	//        10, 7,  11, 17, 18, 3, 5,  16, 8,  21, 24, 4,
+	//        15, 23, 19, 13, 12, 2, 20, 14, 22, 9,  6,  1
+	//    };
+	mstore_internal(i32.add(slot, 0xE0:i32), 0x0A070B1112030510,  0x081518040F17130D, 0x0C02140E16090601, 0x0000000000000000)
+
+	// state context
+	//	typedef struct {
+	//			union {                             // state:
+	//			uint8_t b[200];                     // 8-bit bytes
+	//			uint64_t q[25];                     // 64-bit words
+	//		} st;
+	//		int pt, rsiz, mdlen;                    // these don't overflow
+	//	} sha3_ctx_t;
+	mstore_internal(i32.add(slot, 0x100:i32), 0x0000000000000000,  0x0000000000000000, 0x0000000000000000, 0x0000000000000000)
+	//                                          |---------------   ------------------  ------------------  ------------------ // 64
+	mstore_internal(i32.add(slot, 0x120:i32), 0x0000000000000000,  0x0000000000000000, 0x0000000000000000, 0x0000000000000000)
+	//                                          ----------------   ------------------  ------------------  ------------------ // 128
+	mstore_internal(i32.add(slot, 0x140:i32), 0x0000000000000000,  0x0000000000000000, 0x0000000000000000, 0x0000000000000000)
+	//                                          ----------------   ------------------  ------------------  ------------------ // 160
+	mstore_internal(i32.add(slot, 0x160:i32), 0x0000000000000000,  0x0000000000000000, 0x0000000000000000, 0x0000000000000000)
+	//                                          ----------------   ------------------  ------------------  ------------------ // 192
+	mstore_internal(i32.add(slot, 0x180:i32), 0x0000000000000000,  0x0000000000000000, 0x0000000000000000, 0x0000000000000000)
+	//                                          ----------------   ------------------  ------------------  ------------------ // 256
+	mstore_internal(i32.add(slot, 0x1A0:i32), 0x0000000000000000,  0x0000000000000000, 0x0000000000000000, 0x0000000000000000)
+	//                                          ----------------   ------------------  ------------------  ------------------ // 320
+	mstore_internal(i32.add(slot, 0x1C0:i32), 0x0000000000000000,  0x0000000000000000, 0x0000000000000088, 0x0000000000000020)
+	//                                          ---------------|  // 200 bytes 'state'
+	// TODO: maybe 'pt', 'rsiz' and 'mdlen' not needed here -> use local variables?.
+	//                                                               |--------------| // 64 bytes 'pt'
+	//                                                                                   |--------------| // 64 bytes 'rsiz' -> 200 - 2 * mdlen = 136 (0x88);
+	//                                                                                                       |--------------| // 64 bytes 'mdlen' -> 32 byte (256 bits).
+
+	let j:i64 := 0
+	let t:i64 := 0
+	// uint64_t bc[5]; // @ 1E0
+	mstore_internal(i32.add(slot, 0x1E0:i32), 0x0000000000000000,  0x0000000000000000, 0x0000000000000000, 0x0000000000000000)
+    //                                          |--------------|     |--------------|    |--------------|    |--------------| // 4 bytes 'bc'
+	//                                               0                       1                 2                     3
+	mstore_internal(i32.add(slot, 0x200:i32), 0x0000000000000000,  0x0000000000000000, 0x0000000000000000, 0x0000000000000000)
+    //                                          |--------------|  // 1 bytes 'bc'
+	//                                               4
+
+	// 1. sha3_init
+	// ------------
+	//	int i;
+	//	for (i = 0; i < 25; i++)
+	//		c->st.q[i] = 0;
+	//	c->mdlen = mdlen;
+	//	c->rsiz = 200 - 2 * mdlen;
+	//	c->pt = 0;
+	// TODO: may be enough just to used the local variables here instead of the memory
+	let mdlen:i64 := 0x20 // 32 byte (256 bits).
+	let rsiz:i32 := 0x88:i32  // 200 - 2 * mdlen = 136 (0x88);
+	let pt:i32 := 0:i32
+
+	// 2. sha3_update
+	// --------------
+	//	size_t i;
+	//	int j;
+	//	j = c->pt;
+	//	for (i = 0; i < len; i++) {
+	//		c->st.b[j++] ^= ((const uint8_t *) data)[i];
+	//		if (j >= c->rsiz) {
+	//			sha3_keccakf(c->st.q);
+	//			j = 0;
+	//		}
+    //	}
+    //	c->pt = j;
+	for { let i:i64 := 0 } i64.lt_u(i, len) { i := i64.add(i, 1:i64) }
+	{
+//		debug.print64(i)
+	}
+
+	// 2. sha3_final
+	// -------------
+	// int i;
+	// sha3_keccakf(c->st.q);
+
+	// c->st.b[c->pt] ^= 0x06; // for sha3
+	// c->st.b[c->pt] |= 0x01; // for keccak <- we want to use this.
+	let ptr:i32 := i32.add(i32.add(slot, 0x100:i32), pt)
+	i64.store(ptr, i64.or(i64.load(ptr), 0x01))
+
+	// c->st.b[c->rsiz - 1] ^= 0x80;
+	ptr := i32.add(i32.add(slot, 0x100:i32), rsiz)
+	i64.store(ptr, i64.xor(i64.load(i32.sub(ptr,1:i32)), 0x80))
+
+	// sha3_keccakf(c->st.q);
+	sha3_keccakf(slot)
+
+	// for (i = 0; i < c->mdlen; i++)
+	//   ((uint8_t *) md)[i] = c->st.b[i];
+	z1, z2, z3, z4 := mload_internal(i32.add(slot, 0x100:i32))
+}
+
+function rotl64(x, y) -> z {
+	// #define ROTL64(x, y) (((x) << (y)) | ((x) >> (64 - (y))))
+	z := i64.or(i64.shl(x, y), i64.shr_u(x, i64.sub(64:i64, y)))
+}
+
+function sha3_keccakf(slot:i32) {
+	// use same memory layout as defined in keccak256 function
+	// slot[0x000..0x100] for constants
+	// slot[0x100..0x200] for state
+
+	let bc_0:i32 := i32.add(slot, 0x1E0:i32) // bc[0]:i64
+	let bc_1:i32 := i32.add(slot, 0x1E1:i32) // bc[1]:i64
+	let bc_2:i32 := i32.add(slot, 0x1E2:i32) // bc[2]:i64
+	let bc_3:i32 := i32.add(slot, 0x1E3:i32) // bc[3]:i64
+	let bc_4:i32 := i32.add(slot, 0x1E4:i32) // bc[4]:i64
+
+	for { let r:i32 := 0:i32 } i32.lt_u(r, 24:i32) { r := i32.add(r, 1:i32) }
+	{
+		// Theta
+		// for (i = 0; i < 5; i++)
+		//   bc[i] = st[i] ^ st[i + 5] ^ st[i + 10] ^ st[i + 15] ^ st[i + 20];
+		//
+		// bc[0] = st[0x0] ^ st[0x5] ^ st[0xa] ^ st[0xf] ^ st[0x14];
+		i64.store(bc_0, i64.xor(i64.load(i32.add(0x100:i32, slot)),
+						i64.xor(i64.load(i32.add(0x105:i32, slot)),
+						i64.xor(i64.load(i32.add(0x10A:i32, slot)),
+						i64.xor(i64.load(i32.add(0x10F:i32, slot)),
+								i64.load(i32.add(0x114:i32, slot)))))))
+		// bc[1] = st[0x1] ^ st[0x6] ^ st[0xb] ^ st[0x10] ^ st[0x15];
+		i64.store(bc_1, i64.xor(i64.load(i32.add(0x101:i32, slot)),
+						i64.xor(i64.load(i32.add(0x106:i32, slot)),
+						i64.xor(i64.load(i32.add(0x10B:i32, slot)),
+						i64.xor(i64.load(i32.add(0x110:i32, slot)),
+								i64.load(i32.add(0x115:i32, slot)))))))
+		// bc[2] = st[0x2] ^ st[0x7] ^ st[0xc] ^ st[0x11] ^ st[0x16];
+		i64.store(bc_2, i64.xor(i64.load(i32.add(0x102:i32, slot)),
+						i64.xor(i64.load(i32.add(0x107:i32, slot)),
+						i64.xor(i64.load(i32.add(0x10C:i32, slot)),
+						i64.xor(i64.load(i32.add(0x111:i32, slot)),
+								i64.load(i32.add(0x116:i32, slot)))))))
+		// bc[3] = st[0x3] ^ st[0x8] ^ st[0xd] ^ st[0x12] ^ st[0x117];
+		i64.store(bc_3, i64.xor(i64.load(i32.add(0x103:i32, slot)),
+						i64.xor(i64.load(i32.add(0x108:i32, slot)),
+						i64.xor(i64.load(i32.add(0x10D:i32, slot)),
+						i64.xor(i64.load(i32.add(0x112:i32, slot)),
+								i64.load(i32.add(0x117:i32, slot)))))))
+		// bc[4] = st[0x4] ^ st[0x9] ^ st[0xe] ^ st[0x13] ^ st[0x18];
+		i64.store(bc_4, i64.xor(i64.load(i32.add(0x104:i32, slot)),
+						i64.xor(i64.load(i32.add(0x109:i32, slot)),
+						i64.xor(i64.load(i32.add(0x10E:i32, slot)),
+						i64.xor(i64.load(i32.add(0x113:i32, slot)),
+								i64.load(i32.add(0x118:i32, slot)))))))
+
+		debug.print64(i64.load(bc_0))
+		debug.print64(i64.load(bc_1))
+		debug.print64(i64.load(bc_2))
+		debug.print64(i64.load(bc_3))
+		debug.print64(i64.load(bc_4))
+
+		//  for (i = 0; i < 5; i++) {
+		//    t = bc[(i + 4) % 5] ^ ROTL64(bc[(i + 1) % 5], 1);
+		//    for (j = 0; j < 25; j += 5)
+		//      st[j + i] ^= t;
+		//  }
+		// t_0 = bc[4] ^ ROTL64(bc[0], 1)
+		let t_0 := i64.xor(i64.load(bc_4), rotl64(i64.load(bc_0), 1:i64))
+		// t_1 = bc[0] ^ ROTL64(bc[1], 1)
+		let t_1 := i64.xor(i64.load(bc_0), rotl64(i64.load(bc_1), 1:i64))
+		// t_2 = bc[1] ^ ROTL64(bc[2], 1)
+		let t_2 := i64.xor(i64.load(bc_1), rotl64(i64.load(bc_2), 1:i64))
+		// t_3 = bc[2] ^ ROTL64(bc[3], 1)
+		let t_3 := i64.xor(i64.load(bc_2), rotl64(i64.load(bc_3), 1:i64))
+		// t_4 = bc[3] ^ ROTL64(bc[4], 1)
+		let t_4 := i64.xor(i64.load(bc_3), rotl64(i64.load(bc_4), 1:i64))
+
+		// st[0] ^= t_0
+		// st[1] ^= t_1
+		// st[2] ^= t_2
+		// st[3] ^= t_3
+		mstore_internal(i32.add(slot, 0x100:i32),
+			i64.xor(i64.load(i32.add(0x100:i32, slot)), t_0),
+			i64.xor(i64.load(i32.add(0x108:i32, slot)), t_1),
+			i64.xor(i64.load(i32.add(0x110:i32, slot)), t_2),
+			i64.xor(i64.load(i32.add(0x118:i32, slot)), t_3))
+		// st[4] ^= t_4
+		// st[5] ^= t_0
+		// st[6] ^= t_1
+		// st[7] ^= t_2
+		mstore_internal(i32.add(slot, 0x120:i32),
+			i64.xor(i64.load(i32.add(0x120:i32, slot)), t_4),
+			i64.xor(i64.load(i32.add(0x128:i32, slot)), t_0),
+			i64.xor(i64.load(i32.add(0x130:i32, slot)), t_1),
+			i64.xor(i64.load(i32.add(0x138:i32, slot)), t_2))
+		// st[8] ^= t_3
+		// st[9] ^= t_4
+		// st[a] ^= t_0
+		// st[b] ^= t_1
+		mstore_internal(i32.add(slot, 0x140:i32),
+			i64.xor(i64.load(i32.add(0x140:i32, slot)), t_3),
+			i64.xor(i64.load(i32.add(0x148:i32, slot)), t_4),
+			i64.xor(i64.load(i32.add(0x150:i32, slot)), t_0),
+			i64.xor(i64.load(i32.add(0x158:i32, slot)), t_1))
+		// st[c] ^= t_2
+		// st[d] ^= t_3
+		// st[e] ^= t_4
+		// st[f] ^= t_0
+		mstore_internal(i32.add(slot, 0x160:i32),
+			i64.xor(i64.load(i32.add(0x160:i32, slot)), t_2),
+			i64.xor(i64.load(i32.add(0x168:i32, slot)), t_3),
+			i64.xor(i64.load(i32.add(0x170:i32, slot)), t_4),
+			i64.xor(i64.load(i32.add(0x178:i32, slot)), t_0))
+		// st[10] ^= t_1
+		// st[11] ^= t_2
+		// st[12] ^= t_3
+		// st[13] ^= t_4
+		mstore_internal(i32.add(slot, 0x180:i32),
+			i64.xor(i64.load(i32.add(0x180:i32, slot)), t_1),
+			i64.xor(i64.load(i32.add(0x188:i32, slot)), t_2),
+			i64.xor(i64.load(i32.add(0x190:i32, slot)), t_3),
+			i64.xor(i64.load(i32.add(0x198:i32, slot)), t_4))
+		// st[14] ^= t_0
+		// st[15] ^= t_1
+		// st[16] ^= t_2
+		// st[17] ^= t_3
+		mstore_internal(i32.add(slot, 0x1A0:i32),
+			i64.xor(i64.load(i32.add(0x1A0:i32, slot)), t_0),
+			i64.xor(i64.load(i32.add(0x1A8:i32, slot)), t_1),
+			i64.xor(i64.load(i32.add(0x1B0:i32, slot)), t_2),
+			i64.xor(i64.load(i32.add(0x1B8:i32, slot)), t_3))
+		// st[18] ^= t_4
+		mstore_internal(i32.add(slot, 0x1C0:i32),
+			i64.xor(i64.load(i32.add(0x1C0:i32, slot)), t_4), 0x00, 0x00, 0x00)
+
+//		debug.print64(i64.load(i32.add(0x1C0:i32, slot)))
+	}
 }
 
 function address() -> z1, z2, z3, z4 {
