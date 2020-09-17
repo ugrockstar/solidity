@@ -14,6 +14,7 @@ contract C {
         return 1;
     }
 }
-
+// ====
+// compileViaYul: false
 // ----
 // f() -> 1

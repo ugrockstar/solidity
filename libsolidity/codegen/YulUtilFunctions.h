@@ -170,6 +170,10 @@ public:
 	/// signature: (slot) ->
 	std::string clearStorageArrayFunction(ArrayType const& _type);
 
+	/// @returns the name of a function that will clear the given storage struct
+	/// signature: (slot) ->
+	std::string clearStorageStructFunction(StructType const& _type);
+
 	/// @returns the name of a function that will copy array from calldata or memory to storage
 	/// signature (slot, value) ->
 	std::string copyArrayToStorage(ArrayType const& _fromType, ArrayType const& _toType);
@@ -366,6 +370,11 @@ public:
 	/// signature: (slot, offset) ->
 	std::string storageSetToZeroFunction(Type const& _type);
 
+	/// @returns the name of a function that will set the given storage slot to
+	/// zero values (for types smaller than 17 bytes it will set as many zero values as needed)
+	/// signature: (slot) ->
+	std::string storageSetWholeSlotToZeroFunction(Type const& _type);
+
 	/// If revertStrings is debug, @returns inline assembly code that
 	/// stores @param _message in memory position 0 and reverts.
 	/// Otherwise returns "revert(0, 0)".
@@ -405,10 +414,6 @@ private:
 	/// @returns the name of a function that reduces the size of a storage byte array by one element
 	/// signature: (byteArray)
 	std::string storageByteArrayPopFunction(ArrayType const& _type);
-
-	/// @returns the name of a function that stores array length for dynamically sized storage arrays
-	/// signature: (storageArray, length)
-	std::string storeArrayLengthFunction(ArrayType const& _type);
 
 	std::string copyArrayFromCalldataToStorage(ArrayType const& _fromType, ArrayType const& _toType);
 	std::string copyArrayFromMemoryToStorage(ArrayType const& _fromType, ArrayType const& _toType);
